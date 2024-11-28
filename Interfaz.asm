@@ -347,7 +347,7 @@
 		#dibujando nueva posicion
 		sub $t0, $t0, 64	#nos vamos al inicio de la recta a dibujar
 		sub $t1, $t1, 64	#128+4, estos 4 extra es la nueva pos del usuario
-    jal check_color_at_position
+    		jal check_color_at_position
 		beq $v0, 1, game_over  # Si es rojo, termina el juego
 		beq $v0, 2, game_win   # Si es amarillo, gana el juego
 		jal dibujar_recta_horizontal
@@ -376,7 +376,7 @@
 		lw $t0, 0($s0)		#cargando en $t0 y $t1 la coord del usuario
 		lw $t1, 0($s1)
 		sub $t0, $t0, 64
-    jal check_color_at_position
+    		jal check_color_at_position
 		beq $v0, 1, game_over  # Si es rojo, termina el juego
 		beq $v0, 2, game_win   # Si es amarillo, gana el juego
 		jal dibujar_recta_horizontal
@@ -508,20 +508,25 @@
 	check_color_at_position:
 		# Recibimos las coordenadas en $t6 (x) y $t7 (y)
 		# Calculamos la dirección de memoria para acceder al color
-		mul $t4, $t7, 512     # y * 512
-		add $t4, $t4, $t6     # y * 512 + x
+		la $s3, jugador_x
+		la $s4, jugador_y
+		lw $s3, 0($s3)
+		lw $s4, 0($s4)
+		mul $t4, $s4, 512     # y * 512
+		add $t4, $t4, $s3     # y * 512 + x
 		add $t4, $t4, $t2     # y * 512 + x + base_address
 		
 		# Leemos el color de la posición
-		lw $t5, 0($t4)        # Cargamos el color en $t5
+		lw $s3, 0($t4)        # Cargamos el color en $t5
 		# Comprobamos si el color es rojo (0xFF0000)
-		li $t1, 0xFF0000      # Color rojo
-		beq $t5, $t1, is_red  # Si el color es rojo, saltamos a is_red
+		li $s4, 0xFF0000      # Color rojo
+		beq $s3, $s4, is_red  # Si el color es rojo, saltamos a is_red
 		
-		li $t1, 0xFFFF00	# Color amarillo (meta)
-		beq $t5, $t1, is_yellow	# Si el color es amarillo, saltamos a is_yellow
+		li $s4, 0xFFFF00	# Color amarillo (meta)
+		beq $s3, $s4, is_yellow	# Si el color es amarillo, saltamos a is_yellow
 		
 		# Si no es rojo ni amarillo, regresamos
+		li $t4, 0
 		jr $ra
 		
 	is_red:
