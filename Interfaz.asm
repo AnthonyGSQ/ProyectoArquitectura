@@ -5,6 +5,9 @@
 	message_s: .asciiz "\nEl jugador se mueve en Y = -1 (S)\n"
 	message_d: .asciiz "\nEl jugador se mueve en X = +1 (D)\n"
 	alignment_error_message: .asciiz "/nError Alineacion/"
+	game_over_message: .asciiz "\nHas Perdido\n"
+	game_win_message: .asciiz "\nHas ganado\n"
+  
 	base_address: .word 0x10010000
 	regiones_disponibles: .word 1,2,3,4,5,6,7,8,9
 	bordes_regiones:
@@ -344,6 +347,9 @@
 		#dibujando nueva posicion
 		sub $t0, $t0, 64	#nos vamos al inicio de la recta a dibujar
 		sub $t1, $t1, 64	#128+4, estos 4 extra es la nueva pos del usuario
+    jal check_color_at_position
+		beq $v0, 1, game_over  # Si es rojo, termina el juego
+		beq $v0, 2, game_win   # Si es amarillo, gana el juego
 		jal dibujar_recta_horizontal
 		#borrando posicion anterior
 		la $s0, entity_x
@@ -370,6 +376,9 @@
 		lw $t0, 0($s0)		#cargando en $t0 y $t1 la coord del usuario
 		lw $t1, 0($s1)
 		sub $t0, $t0, 64
+    jal check_color_at_position
+		beq $v0, 1, game_over  # Si es rojo, termina el juego
+		beq $v0, 2, game_win   # Si es amarillo, gana el juego
 		jal dibujar_recta_horizontal
 		#borrando posicion anterior
 		la $s0, entity_x
@@ -396,6 +405,9 @@
 		lw $t1, 0($s1)
 		sub $t0, $t0, 64
 		sub $t1, $t1, 60
+    jal check_color_at_position
+		beq $v0, 1, game_over  # Si es rojo, termina el juego
+		beq $v0, 2, game_win   # Si es amarillo, gana el juego
 		jal dibujar_recta_vertical
 
 		#borramos la posicion anterior
@@ -420,6 +432,9 @@
 		lw $t0,0($s0)
 		lw $t1, 0($s1)
 		sub $t1, $t1, 64
+    jal check_color_at_position
+		beq $v0, 1, game_over  # Si es rojo, termina el juego
+		beq $v0, 2, game_win   # Si es amarillo, gana el juego
 		jal dibujar_recta_vertical
 		
 		#borramos la posicion anterior
@@ -489,3 +504,45 @@
 		la $a0, alignment_error_message
 		syscall
 		jr $ra
+		
+	check_color_at_position:
+		# Recibimos las coordenadas en $t6 (x) y $t7 (y)
+		# Calculamos la dirección de memoria para acceder al color
+		mul $t4, $t7, 512     # y * 512
+		add $t4, $t4, $t6     # y * 512 + x
+		add $t4, $t4, $t2     # y * 512 + x + base_address
+		
+		# Leemos el color de la posición
+		lw $t5, 0($t4)        # Cargamos el color en $t5
+		# Comprobamos si el color es rojo (0xFF0000)
+		li $t1, 0xFF0000      # Color rojo
+		beq $t5, $t1, is_red  # Si el color es rojo, saltamos a is_red
+		
+		li $t1, 0xFFFF00	# Color amarillo (meta)
+		beq $t5, $t1, is_yellow	# Si el color es amarillo, saltamos a is_yellow
+		
+		# Si no es rojo ni amarillo, regresamos
+		jr $ra
+		
+	is_red:
+		li $v0, 1	# Devolvemos 1 (rojo)
+		jr $ra
+		
+	is_yellow:
+		li $v0, 2	# Devolvemos 2 (amarillo)
+		jr $ra
+    
+    # Si el jugador ha tocado un enemigo
+	game_over:
+		li $v0, 4
+		la $a0, game_over_message  # Mensaje de "Has perdido"
+		syscall
+		li $v0, 10  # Cerrar el programa
+		syscall
+		
+	game_win:
+		li $v0, 4
+		la $a0, game_win_message  # Mensaje de "Has ganado"
+		syscall
+		li $v0, 10  # Cerrar el programa
+		syscall
