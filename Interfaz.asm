@@ -1,3 +1,7 @@
+# ESTUDIANTES
+# Anthony Sanchez Quiros C37331
+# Mauricio Artavia Monge C10743
+
 .data
 	alignment_error_message: .asciiz "/nError Alineacion/"
 	game_over_message: .asciiz "\nHas Perdido\n"
